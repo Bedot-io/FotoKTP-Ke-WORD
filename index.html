@@ -2,42 +2,67 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Susun Foto KTP ke Word</title>
-
-<!-- Logo tab browser: taruh file favicon.png di folder yang sama dengan index.html -->
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>App</title>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
     height: 100%;
+    font-family: Arial, sans-serif;
+  }
+
+  body {
     background: #fff;
-    overflow: hidden;
   }
 
   #appFrame {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
     border: none;
+    width: 100%;
+    height: 100vh;
     display: block;
   }
+
+  /* Pesan jika iframe gagal dimuat (mis. diblokir oleh Google) */
+  #fallbackMsg {
+    display: none;
+    padding: 30px;
+    text-align: center;
+    color: #444;
+  }
+
+  .btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background: #0f766e;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  .btn:hover { background: #115e59; }
 </style>
 </head>
 <body>
 
-<iframe id="appFrame" allow="clipboard-write; clipboard-read; fullscreen" title="Susun Foto KTP ke Word"></iframe>
+<!-- GANTI LINK APPS SCRIPT DI VARIABEL APP_URL DI BAWAH -->
+<iframe id="appFrame" allow="clipboard-write"></iframe>
+
+<div id="fallbackMsg">
+  Aplikasi tidak bisa ditampilkan langsung di halaman ini.<br><br>
+  <a class="btn" id="fallbackLink" target="_blank">🚀 Buka di tab baru</a>
+</div>
 
 <script>
-// Satu-satunya tempat yang perlu diganti saat link Apps Script berubah
-const APP_URL = "https://script.google.com/macros/s/AKfycbwVzexqqSr514b9DaxHEKwGlFo8mi7xLziThTgtD646V-aw2LmX9SSZroz2-7KMCK6EIQ/exec";
+  // Satu-satunya tempat yang perlu diganti saat link Apps Script berubah
+  const APP_URL = "https://script.google.com/macros/s/AKfycbwVzexqqSr514b9DaxHEKwGlFo8mi7xLziThTgtD646V-aw2LmX9SSZroz2-7KMCK6EIQ/exec";
 
-document.getElementById('appFrame').src = APP_URL;
+  const frame = document.getElementById('appFrame');
+  frame.src = APP_URL;
+  document.getElementById('fallbackLink').href = APP_URL;
 </script>
 
 </body>
