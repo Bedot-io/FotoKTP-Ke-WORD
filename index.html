@@ -14,85 +14,30 @@
 
   html, body {
     height: 100%;
-    font-family: Arial, sans-serif;
     background: #fff;
+    overflow: hidden;
   }
 
   #appFrame {
-    border: none;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    display: block;
-  }
-
-  /* Tombol cadangan di pojok kanan bawah (desktop) */
-  #fallbackMsg {
-    display: none;
     position: fixed;
-    right: 12px;
-    bottom: 12px;
-    z-index: 10;
-  }
-
-  .btn {
-    display: inline-block;
-    padding: 10px 16px;
-    background: #0f766e;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    box-shadow: 0 2px 8px rgba(0,0,0,.25);
-  }
-  .btn:hover { background: #115e59; }
-
-  /* Pesan untuk HP saat pengalihan */
-  #mobileMsg {
-    display: none;
-    padding: 40px 20px;
-    text-align: center;
-    color: #444;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
   }
 </style>
 </head>
 <body>
 
-<iframe id="appFrame" allow="clipboard-write"></iframe>
-
-<div id="fallbackMsg">
-  <a class="btn" id="fallbackLink" target="_blank" rel="noopener">🚀 Buka di tab baru</a>
-</div>
-
-<div id="mobileMsg">
-  Membuka aplikasi...<br><br>
-  <a class="btn" id="mobileLink">🚀 Klik di sini jika tidak terbuka</a>
-</div>
+<iframe id="appFrame" allow="clipboard-write; clipboard-read; fullscreen" title="Susun Foto KTP ke Word"></iframe>
 
 <script>
 // Satu-satunya tempat yang perlu diganti saat link Apps Script berubah
-const APP_URL = "https://script.google.com/macros/s/AKfycbyAAqgZhHbjZ3hK0SPqQkD-raWQc3Qq93OQcVDWsffWP5AQ_MmEGHAXSI0hyCJjiv79/exec";
+const APP_URL = "https://script.google.com/macros/s/AKfycbwVzexqqSr514b9DaxHEKwGlFo8mi7xLziThTgtD646V-aw2LmX9SSZroz2-7KMCK6EIQ/exec";
 
-const frame     = document.getElementById('appFrame');
-const fallback  = document.getElementById('fallbackMsg');
-const mobileMsg = document.getElementById('mobileMsg');
-
-document.getElementById('fallbackLink').href = APP_URL;
-document.getElementById('mobileLink').href   = APP_URL;
-
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-if (isMobile) {
-  // HP: buka langsung tanpa iframe (menghindari layar putih)
-  frame.style.display = 'none';
-  mobileMsg.style.display = 'block';
-  window.location.replace(APP_URL);
-} else {
-  // Desktop: tampil lewat iframe, tombol cadangan selalu tersedia
-  frame.src = APP_URL;
-  fallback.style.display = 'block';
-}
+document.getElementById('appFrame').src = APP_URL;
 </script>
 
 </body>
