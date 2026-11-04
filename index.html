@@ -1,18 +1,1170 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+<base target="_top">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Foto KTP Ke File</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pemotong KTP Otomatis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-  html,body{margin:0;height:100%;background:#f3f6f9}
-  iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
+:root{--ink:#14202e;--muted:#566678;--blue:#2a6db0;--blue-d:#1f5489;--paper:#f3f6f9;--line:#d3dde8;--ok:#17603f;--ok-bg:#e2f4ea;--warn:#8a4f00;--warn-bg:#fff0d0;--err:#a3262a;--err-bg:#fde7e7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:clamp(26px,5vw,38px);line-height:1.1;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+.lead{margin:0 0 24px;color:var(--muted);max-width:60ch}
+.top{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:800px){.top{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+.drop{aspect-ratio:85.6/54;min-height:190px;border-radius:16px;background:
+ linear-gradient(var(--blue),var(--blue)) top left/28px 4px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) top left/4px 28px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) top right/28px 4px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) top right/4px 28px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) bottom left/28px 4px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) bottom left/4px 28px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) bottom right/28px 4px no-repeat,
+ linear-gradient(var(--blue),var(--blue)) bottom right/4px 28px no-repeat,#fff;
+ border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:20px;cursor:pointer;transition:background-color .15s,border-color .15s}
+.drop:hover,.drop.over{border-color:var(--blue);background-color:#eaf2fb}
+.drop:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #9cc4ef;outline-offset:2px}
+.drop strong{font-size:18px}.drop span{color:var(--muted);font-size:14px}
+.dropcol{display:grid;gap:10px;align-content:start}
+.camlabel{text-align:center;padding:12px 14px;font-size:15px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;gap:14px;align-content:start}
+.panel h2{margin:0;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#eaf2fb;color:var(--blue-d);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
+label{display:grid;gap:4px;font-size:14px;font-weight:500}
+label small{color:var(--muted);font-weight:400}
+.fl{display:flex;justify-content:space-between;gap:8px}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.chk{display:flex;align-items:center;gap:8px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 14px}
+.bar .grow{flex:1;min-width:160px;color:var(--muted);font-size:14px}
+.btn{font:inherit;font-weight:700;border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:10px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover:not(:disabled){background:var(--blue-d)}
+.btn.alt{background:#fff;color:var(--blue-d)}.btn.alt:hover:not(:disabled){background:#eaf2fb}
+.btn.alt.on{background:var(--blue);color:#fff}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.green{background:#188038;border-color:#188038}.btn.green:hover{background:#12662c}
+.btn.red{background:#d93025;border-color:#d93025;color:#fff}.btn.red:hover:not(:disabled){background:#b3261e}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;align-content:start}
+.thumb{aspect-ratio:3/2;border-radius:8px;background:repeating-conic-gradient(#e9eef3 0 25%,#f7f9fb 0 50%) 0 0/16px 16px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;overflow:hidden}
+.thumb img{max-width:100%;max-height:100%;display:block}
+.name{margin:0;font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.meta{margin:0;color:var(--muted);font-size:13px}
+.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12.5px;font-weight:700}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}.tag.warn{background:var(--warn-bg);color:var(--warn)}.tag.err{background:var(--err-bg);color:var(--err)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.empty{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:14px;background:#fff}
+.note{font-size:13px;color:var(--muted);margin-top:22px;max-width:75ch}
+/* ===== Susunan Word F4 & PDF ===== */
+.lay{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:720px;margin:0 auto;padding:14px;background:#f7f9fb;border:1px solid var(--line);border-radius:12px}
+.pagelabel{grid-column:1/-1;padding:12px;text-align:center;font-weight:800;font-size:17px;color:#fff;background:var(--blue);border-radius:8px;margin:4px 0}
+.slot{position:relative;aspect-ratio:3/2;min-height:90px;border:1px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fff;cursor:grab;user-select:none;padding:4px}
+.slot img{max-width:100%;max-height:100%;pointer-events:none;display:block}
+.slot.empty{background:#f1f3f4;border:2px dashed #bdc1c6;color:#8a929b;font-size:13px;cursor:pointer}
+.slot.dragging{opacity:.4}.slot.over{outline:3px solid var(--blue)}.slot.pick{outline:3px solid #f9ab00}
+.badge{position:absolute;top:6px;left:6px;background:var(--ink);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}
+.rm{position:absolute;top:5px;right:5px;width:26px;height:26px;border:0;border-radius:50%;background:#d93025;color:#fff;cursor:pointer;font-size:16px;line-height:26px;padding:0}
+#ed{position:fixed;inset:0;background:rgba(10,20,30,.65);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px;overflow:auto}
+#ed[hidden]{display:none}
+.edbox{background:#fff;border-radius:16px;padding:16px;display:grid;gap:10px;max-width:100%;max-height:100%;overflow:auto;justify-items:center}
+#edCv{touch-action:none;cursor:move;border-radius:8px;max-width:100%}
+.edbox label{width:100%}
 </style>
 </head>
 <body>
-<iframe
-  src="https://script.google.com/macros/s/AKfycbwnRgytJ2_ck3ymcGruvNjL-xFb7FH2JsVFzjY82Gr4sDqTnsUOWc7yntCV8fK4YYAqMA/exec"
-  title="Foto KTP Ke File"
-  allow="camera; fullscreen; clipboard-write; downloads"></iframe>
+<main class="wrap">
+  <h1>Pemotong KTP otomatis</h1>
+  <p class="lead">Foto KTP dipotong otomatis langsung di browser Anda, lalu disusun ke Word F4 dan PDF. Semua proses berjalan di browser Anda, gambar tidak dikirim ke server mana pun.</p>
+
+  <div class="top">
+    <div class="dropcol">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Pilih foto KTP">
+        <strong>Tarik foto KTP ke sini</strong>
+        <span>atau ketuk untuk memilih dari galeri. Boleh banyak foto sekaligus.</span>
+      </div>
+      <label class="btn camlabel" for="cam">📷 Foto dengan kamera</label>
+    </div>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+
+    <section class="panel" aria-label="Pengaturan">
+      <h2>Pengaturan hasil</h2>
+      <div class="chips"><span class="chip">Hasil JPG</span><span class="chip">Unggahan tanpa batas</span><span class="chip">Susunan Word F4 dan PDF</span></div>
+      <label>Sisi KTP
+        <select id="side"><option value="depan" selected>Bagian depan</option><option value="belakang">Bagian belakang</option></select>
+        <small>Dipakai pada nama file hasil.</small>
+      </label>
+      <label>Rasio hasil potong
+        <select id="ratio"><option value="1.5" selected>9 × 6 cm (pas untuk Word F4)</option><option value="1.5857">85,6 × 54 mm (ukuran KTP asli)</option></select>
+        <small>Pilih 9 × 6 cm agar foto tidak melar di Word dan PDF.</small>
+      </label>
+      <label><span class="fl">Kualitas JPG <b id="qv">92%</b></span><input type="range" id="quality" min="60" max="100" value="92"></label>
+      <label><span class="fl">Margin di sekeliling KTP <b id="pv">2%</b></span><input type="range" id="pad" min="0" max="10" value="2"></label>
+      <label><span class="fl">Kepekaan deteksi tepi <b id="sv">5</b></span><input type="range" id="sens" min="1" max="10" value="5"><small>Naikkan bila KTP terpotong, turunkan bila bayangan ikut terpotong.</small></label>
+      <label>Mode grid (opsional)
+        <span class="fl">
+          <input type="number" id="gridC" min="0" max="6" value="0" placeholder="Kolom" style="width:48%">
+          <input type="number" id="gridR" min="0" max="8" value="0" placeholder="Baris" style="width:48%">
+        </span>
+        <small>Biarkan 0 untuk deteksi otomatis (aplikasi membaca sendiri jumlah kolom dan baris). Isi manual, mis. 2 × 5, bila hasilnya masih meleset.</small>
+      </label>
+      <label class="chk"><input type="checkbox" id="lock" checked> Kunci rasio hasil potong</label>
+      <label class="chk"><input type="checkbox" id="multi" checked> Deteksi beberapa KTP dalam satu foto</label>
+    </section>
+  </div>
+
+  <div class="bar">
+    <span class="grow" id="sum" aria-live="polite">Belum ada foto</span>
+    <button class="btn" id="dlJpg" disabled>Download semua JPG</button>
+    <button class="btn" id="dlPng" disabled>Download semua PNG</button>
+    <button class="btn alt" id="clear" disabled>Hapus semua</button>
+  </div>
+
+  <div class="grid" id="list"></div>
+  <div class="empty" id="empty">Hasil potongan akan muncul di sini.</div>
+
+  <section class="panel" style="margin-top:22px" aria-label="Susun ke Word F4 dan PDF">
+    <h2>Susun ke Word F4 dan PDF</h2>
+    <p class="meta">Setiap foto yang selesai dipotong masuk otomatis ke susunan ini, dan Anda juga bisa mengunggah KTP yang sudah terpotong langsung ke sini (maksimal 50 foto). Geser foto ke foto lain untuk menukar posisi, atau ke slot kosong untuk memindahkannya. Di HP: ketuk satu foto, lalu ketuk foto atau slot tujuan. Tombol × mengeluarkan foto dari susunan dan meninggalkan slot kosong di halaman itu.</p>
+    <div class="row">
+      <label class="btn alt" for="preFile">Unggah KTP yang sudah terpotong</label>
+      <input type="file" id="preFile" accept="image/*" multiple hidden>
+      <span class="meta">Langsung masuk susunan tanpa dipotong lagi.</span>
+    </div>
+    <div class="row">
+      <b>Foto per halaman:</b>
+      <button type="button" class="btn alt on" id="pp8">8 foto</button>
+      <button type="button" class="btn alt" id="pp10">10 foto</button>
+      <span class="meta" id="pageInfo"></span>
+    </div>
+    <div class="lay" id="lay"></div>
+    <div class="row">
+      <button class="btn" id="makeBtn" disabled>Buat file Word</button>
+      <span id="dl"></span>
+      <button class="btn red" id="pdfBtn" style="display:none" disabled>Download PDF</button>
+    </div>
+    <div class="meta" id="wstat" aria-live="polite"></div>
+  </section>
+
+  <p class="note">Deteksi bekerja paling baik bila KTP difoto di atas permukaan polos yang warnanya berbeda dari kartu, dengan alas polos tersisa sekitar 2-3 cm di sekeliling semua KTP. Foto yang miring dipotong sebagai kotak pembatas, bukan diluruskan. Bila ada beberapa KTP dalam satu foto, letakkan berdampingan dengan jarak sekitar 1 cm dan jangan ditumpuk; tiap KTP dipotong dan dimasukkan sendiri-sendiri. Untuk 8-10 KTP sekaligus, susun rapi dalam grid lalu isi Mode grid (mis. 2 × 5). Hasil bertanda kuning perlu dicek dan, bila perlu, difoto ulang atau diputar.</p>
+</main>
+
+<div id="ed" hidden role="dialog" aria-modal="true" aria-label="Atur posisi potong">
+  <div class="edbox">
+    <b>Atur posisi potong</b>
+    <p class="meta">Geser kotak kuning pada foto asli untuk menyesuaikan hasil potong.</p>
+    <canvas id="edCv"></canvas>
+    <label><span class="fl">Ukuran kotak <b id="edSv">100%</b></span><input type="range" id="edSize" min="30" max="200" value="100"></label>
+    <div class="row">
+      <button type="button" class="btn small alt" data-nudge="-1,0" aria-label="Geser kiri">←</button>
+      <button type="button" class="btn small alt" data-nudge="0,-1" aria-label="Geser atas">↑</button>
+      <button type="button" class="btn small alt" data-nudge="0,1" aria-label="Geser bawah">↓</button>
+      <button type="button" class="btn small alt" data-nudge="1,0" aria-label="Geser kanan">→</button>
+      <button type="button" class="btn small alt" id="edSwap">Putar kotak 90°</button>
+    </div>
+    <div class="row"><button type="button" class="btn" id="edSave">Simpan</button><button type="button" class="btn alt" id="edCancel">Batal</button></div>
+  </div>
+</div>
+
+<script>
+const MAX_OUT = 1600, MAX_PHOTOS = 50, WORD_SIDE = 1000;
+const $ = id => document.getElementById(id);
+const items = [];          // semua foto yang diunggah
+const slots = [];          // susunan Word/PDF: item atau null (slot kosong)
+let nextId = 1, busy = false, perPage = 8, dragIdx = null, tapIdx = null;
+
+const cfg = () => ({
+  q: +$('quality').value / 100,
+  pad: +$('pad').value / 100,
+  sens: +$('sens').value,
+  lock: $('lock').checked,
+  ratio: +$('ratio').value,
+  side: $('side').value,
+  multi: $('multi').checked,
+  gc: Math.max(0, Math.floor(+$('gridC').value || 0)),
+  gr: Math.max(0, Math.floor(+$('gridR').value || 0))
+});
+
+/* ---------- Deteksi KTP ---------- */
+function otsu(h, t) {
+  let sum = 0; for (let i = 0; i < 256; i++) sum += i * h[i];
+  let sb = 0, wb = 0, mx = 0, th = 0;
+  for (let i = 0; i < 256; i++) {
+    wb += h[i]; if (!wb) continue;
+    const wf = t - wb; if (!wf) break;
+    sb += i * h[i];
+    const mb = sb / wb, mf = (sum - sb) / wf, v = wb * wf * (mb - mf) * (mb - mf);
+    if (v > mx) { mx = v; th = i; }
+  }
+  return th;
+}
+
+/* Rapikan mask kisi: tutup celah kecil (closing) lalu isi lubang di dalam kartu */
+function cleanMask(fg, gw, gh, rad) {
+  const n = gw * gh;
+  const dil = (src) => {
+    const o = new Uint8Array(n);
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      let v = 0;
+      for (let dy = -1; dy <= 1 && !v; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < gw && yy >= 0 && yy < gh && src[yy * gw + xx]) { v = 1; break; }
+      }
+      o[y * gw + x] = v;
+    }
+    return o;
+  };
+  const ero = (src) => {
+    const o = new Uint8Array(n);
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      let v = 1;
+      for (let dy = -1; dy <= 1 && v; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < gw && yy >= 0 && yy < gh && !src[yy * gw + xx]) { v = 0; break; }
+      }
+      o[y * gw + x] = v;
+    }
+    return o;
+  };
+  let m = fg;
+  for (let i = 0; i < rad; i++) m = dil(m);
+  for (let i = 0; i < rad; i++) m = ero(m);
+  // isi lubang: sel kosong yang tidak terhubung ke tepi gambar menjadi bagian kartu
+  const out = new Uint8Array(n), reach = new Uint8Array(n), st = [];
+  const seed = (x, y) => { const k = y * gw + x; if (!m[k] && !reach[k]) { reach[k] = 1; st.push(k); } };
+  for (let x = 0; x < gw; x++) { seed(x, 0); seed(x, gh - 1); }
+  for (let y = 0; y < gh; y++) { seed(0, y); seed(gw - 1, y); }
+  while (st.length) {
+    const k = st.pop(), x = k % gw, y = (k / gw) | 0;
+    if (x > 0) seed(x - 1, y); if (x < gw - 1) seed(x + 1, y);
+    if (y > 0) seed(x, y - 1); if (y < gh - 1) seed(x, y + 1);
+  }
+  for (let k = 0; k < n; k++) out[k] = (m[k] || !reach[k]) ? 1 : 0;
+  return out;
+}
+
+/* Daftar semua komponen terhubung beserta nilai kemiripannya dengan KTP (persegi panjang, rasio 1,586, tidak menempel tepi) */
+function listComponents(fg, gw, gh, minFrac) {
+  const lab = new Int32Array(gw * gh), stack = new Int32Array(gw * gh), comps = [];
+  let id = 0;
+  for (let s0 = 0; s0 < fg.length; s0++) {
+    if (!fg[s0] || lab[s0]) continue;
+    id++; let sp = 0; stack[sp++] = s0; lab[s0] = id;
+    let size = 0, x0 = gw, y0 = gh, x1 = -1, y1 = -1;
+    while (sp) {
+      const k = stack[--sp], kx = k % gw, ky = (k / gw) | 0; size++;
+      if (kx < x0) x0 = kx; if (kx > x1) x1 = kx; if (ky < y0) y0 = ky; if (ky > y1) y1 = ky;
+      if (kx > 0 && fg[k - 1] && !lab[k - 1]) { lab[k - 1] = id; stack[sp++] = k - 1; }
+      if (kx < gw - 1 && fg[k + 1] && !lab[k + 1]) { lab[k + 1] = id; stack[sp++] = k + 1; }
+      if (ky > 0 && fg[k - gw] && !lab[k - gw]) { lab[k - gw] = id; stack[sp++] = k - gw; }
+      if (ky < gh - 1 && fg[k + gw] && !lab[k + gw]) { lab[k + gw] = id; stack[sp++] = k + gw; }
+    }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, frac = (bw * bh) / (gw * gh);
+    if (frac < minFrac) continue;
+    const fill = size / (bw * bh);
+    const ar = Math.max(bw, bh) / Math.min(bw, bh);
+    const arPen = Math.exp(-2.5 * Math.abs(Math.log(ar / 1.586)));
+    let touch = 0; if (x0 <= 0) touch++; if (y0 <= 0) touch++; if (x1 >= gw - 1) touch++; if (y1 >= gh - 1) touch++;
+    const tPen = [1, 0.9, 0.6, 0.2, 0.06][touch];
+    const base = fill * fill * arPen * tPen * (frac > 0.95 ? 0.3 : 1);
+    comps.push({ base, score: base * Math.min(1, frac / 0.2), size, id, x0, y0, x1, y1, frac });
+  }
+  return { comps, lab };
+}
+
+function bestComponent(fg, gw, gh) {
+  const { comps, lab } = listComponents(fg, gw, gh, 0.08);
+  let best = null;
+  comps.forEach(c => { if (!best || c.score > best.score) best = c; });
+  return best ? { best, lab } : null;
+}
+
+const bboxOverlap = (a, b) => {
+  const ix = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + 1), iy = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + 1);
+  const A = (a.x1 - a.x0 + 1) * (a.y1 - a.y0 + 1), B = (b.x1 - b.x0 + 1) * (b.y1 - b.y0 + 1);
+  return ix * iy / Math.min(A, B);
+};
+
+/* Cari beberapa KTP sekaligus: coba beberapa tingkat "penutupan celah" agar KTP yang berdekatan tidak menyatu.
+   Hasil terbaik = yang menemukan kartu paling banyak (bukan yang kartunya paling besar). */
+function pickMulti(raws, gw, gh) {
+  let top = null;
+  raws.forEach(raw => [0, 1, 2, 3, 4, 5].forEach(rad => {
+    const { comps, lab } = listComponents(cleanMask(raw, gw, gh, rad), gw, gh, 0.03);
+    let good = comps.filter(c => c.base >= 0.3);
+    if (good.length < 2) return;
+    const maxA = Math.max(...good.map(c => c.size));
+    good = good.filter(c => c.size >= 0.25 * maxA).sort((a, b) => b.base - a.base);
+    const sel = [];
+    good.forEach(c => { if (!sel.some(o => bboxOverlap(o, c) > 0.2)) sel.push(c); });
+    if (sel.length < 2) return;
+    const total = sel.reduce((t, c) => t + c.base, 0);
+    if (!top || total > top.total) top = { total, sel, lab };
+  }));
+  return top;
+}
+
+function detect(img, sens, ratio, multi) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const sc = Math.min(1, 1000 / Math.max(W, H));
+  const w = Math.max(8, Math.round(W * sc)), h = Math.max(8, Math.round(H * sc));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h).data;
+  const N = w * h, cs = 6, gw = Math.ceil(w / cs), gh = Math.ceil(h / cs);
+  const med = a => { const t = Uint8Array.from(a).sort(); return t[t.length >> 1]; };
+
+  /* --- Estimasi warna latar dengan dua cara: pita tepi dan empat sudut --- */
+  const region = (test) => {
+    const R = [], G = [], B = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (test(x, y)) { const i = (y * w + x) * 4; R.push(d[i]); G.push(d[i + 1]); B.push(d[i + 2]); }
+    return [med(R), med(G), med(B)];
+  };
+  const m = Math.max(2, Math.round(Math.min(w, h) * 0.04));
+  const bgEdge = region((x, y) => x < m || x >= w - m || y < m || y >= h - m);
+  const pw = Math.max(3, Math.round(w * 0.08)), ph = Math.max(3, Math.round(h * 0.08));
+  const corners = [
+    region((x, y) => x < pw && y < ph), region((x, y) => x >= w - pw && y < ph),
+    region((x, y) => x < pw && y >= h - ph), region((x, y) => x >= w - pw && y >= h - ph)
+  ];
+  const bgCorner = [0, 1, 2].map(ch => { const v = corners.map(q => q[ch]).sort((a, b) => a - b); return (v[1] + v[2]) / 2; });
+
+  const colorMask = (bg) => {
+    const hist = new Uint32Array(256), dist = new Uint8Array(N);
+    for (let i = 0, p = 0; i < N; i++, p += 4) {
+      const dr = d[p] - bg[0], dg = d[p + 1] - bg[1], db = d[p + 2] - bg[2];
+      const v = Math.min(255, Math.round(Math.sqrt(dr * dr + dg * dg + db * db)));
+      dist[i] = v; hist[v]++;
+    }
+    const thr = Math.max(14, otsu(hist, N) * (1.3 - 0.06 * sens));
+    const cnt = new Uint16Array(gw * gh), tot = new Uint16Array(gw * gh);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const k = ((y / cs) | 0) * gw + ((x / cs) | 0);
+      tot[k]++; if (dist[y * w + x] > thr) cnt[k]++;
+    }
+    const fg = new Uint8Array(gw * gh);
+    for (let k = 0; k < fg.length; k++) fg[k] = cnt[k] / tot[k] > 0.4 ? 1 : 0;
+    return fg;
+  };
+
+  /* --- Mask tekstur: KTP penuh teks, foto, dan pola; meja polos tidak --- */
+  const textureMask = () => {
+    const gray = new Uint8Array(N);
+    for (let i = 0, p = 0; i < N; i++, p += 4) gray[i] = (d[p] * 77 + d[p + 1] * 150 + d[p + 2] * 29) >> 8;
+    const cnt = new Uint16Array(gw * gh), tot = new Uint16Array(gw * gh);
+    for (let y = 0; y < h - 1; y++) for (let x = 0; x < w - 1; x++) {
+      const i = y * w + x, e = Math.abs(gray[i] - gray[i + 1]) + Math.abs(gray[i] - gray[i + w]);
+      const k = ((y / cs) | 0) * gw + ((x / cs) | 0);
+      tot[k]++; if (e > 28) cnt[k]++;
+    }
+    const need = 0.2 - 0.015 * sens;
+    const fg = new Uint8Array(gw * gh);
+    for (let k = 0; k < fg.length; k++) fg[k] = tot[k] && cnt[k] / tot[k] > need ? 1 : 0;
+    return fg;
+  };
+
+  /* --- Rapikan tepi komponen: buang baris/kolom tipis (bayangan, jari), ubah ke piksel asli --- */
+  const refine = (cmp, lab) => {
+    let { x0, y0, x1, y1 } = cmp; const id = cmp.id;
+    const colN = x => { let n = 0; for (let y = y0; y <= y1; y++) if (lab[y * gw + x] === id) n++; return n; };
+    const rowN = y => { let n = 0; for (let x = x0; x <= x1; x++) if (lab[y * gw + x] === id) n++; return n; };
+    while (x0 < x1 && colN(x0) < 0.25 * (y1 - y0 + 1)) x0++;
+    while (x1 > x0 && colN(x1) < 0.25 * (y1 - y0 + 1)) x1--;
+    while (y0 < y1 && rowN(y0) < 0.25 * (x1 - x0 + 1)) y0++;
+    while (y1 > y0 && rowN(y1) < 0.25 * (x1 - x0 + 1)) y1--;
+    const bx = Math.max(0, x0 * cs / sc), by = Math.max(0, y0 * cs / sc);
+    return { x: bx, y: by, w: Math.min(W, (x1 + 1) * cs / sc) - bx, h: Math.min(H, (y1 + 1) * cs / sc) - by };
+  };
+
+  const raws = [colorMask(bgCorner), colorMask(bgEdge), textureMask()];
+
+  /* --- Beberapa KTP dalam satu foto --- */
+  let all = null;
+  if (multi) {
+    const mt = pickMulti(raws, gw, gh);
+    if (mt) {
+      const arr = mt.sel.map(c => ({ box: refine(c, mt.lab), ok: c.base >= 0.5 }));
+      // urutkan seperti membaca: baris dari atas ke bawah, dalam baris dari kiri ke kanan
+      arr.sort((a, b) => (a.box.y + a.box.h / 2) - (b.box.y + b.box.h / 2));
+      const rows = [];
+      arr.forEach(it => {
+        const cy = it.box.y + it.box.h / 2, r = rows.find(r => Math.abs(r.cy - cy) < 0.5 * it.box.h);
+        if (r) r.items.push(it); else rows.push({ cy, items: [it] });
+      });
+      all = [].concat(...rows.map(r => r.items.sort((a, b) => a.box.x - b.box.x)));
+    }
+  }
+
+  /* --- Satu KTP: coba tiap kandidat, ambil yang paling mirip KTP --- */
+  let pick = null;
+  [[raws[0], 2], [raws[1], 2], [raws[2], 5]].forEach(([raw, rad]) => {
+    const r = bestComponent(cleanMask(raw, gw, gh, rad), gw, gh);
+    if (r && (!pick || r.best.score > pick.best.score)) pick = r;
+  });
+
+  let box = null, ok = false;
+  if (pick && pick.best.score >= 0.12) {
+    box = refine(pick.best, pick.lab);
+    const frac = (box.w * box.h) / (W * H);
+    ok = pick.best.score >= 0.3 && frac > 0.08 && frac < 0.96;
+    if (frac >= 0.96) { box = { x: 0, y: 0, w: W, h: H }; ok = false; }
+  }
+  if (!box || (box.w * box.h) / (W * H) <= 0.08) {
+    // Cadangan: potong tengah gambar dengan rasio yang dipilih
+    let bw = W * 0.9, bh = bw / ratio;
+    if (bh > H * 0.9) { bh = H * 0.9; bw = bh * ratio; }
+    box = { x: (W - bw) / 2, y: (H - bh) / 2, w: bw, h: bh }; ok = false;
+  }
+  return { box, ok, all };
+}
+
+/* Mode grid: foto dibagi rata menjadi kolom x baris, tiap sel dideteksi sebagai satu KTP */
+function detectGrid(img, gc, gr, sens, ratio) {
+  const W = img.naturalWidth, H = img.naturalHeight, cw = W / gc, ch = H / gr, out = [];
+  for (let r = 0; r < gr; r++) for (let c = 0; c < gc; c++) {
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(8, Math.round(cw)); cv.height = Math.max(8, Math.round(ch));
+    cv.getContext('2d').drawImage(img, c * cw, r * ch, cw, ch, 0, 0, cv.width, cv.height);
+    const d = detect(cv, sens, ratio, false);
+    out.push({ box: { x: d.box.x + c * cw, y: d.box.y + r * ch, w: d.box.w, h: d.box.h }, ok: d.ok });
+  }
+  return out;   // urutan: kiri ke kanan, atas ke bawah
+}
+
+
+/* Grid otomatis: baca jumlah kolom dan baris dari celah kosong antar KTP (proyeksi mask latar) */
+function detectAutoGrid(img, sens, ratio) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const sc = Math.min(1, 500 / Math.max(W, H)), w = Math.max(8, Math.round(W * sc)), h = Math.max(8, Math.round(H * sc));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h).data, N = w * h;
+  const med = a => { const t = Uint8Array.from(a).sort(); return t[t.length >> 1]; };
+  const m = Math.max(2, Math.round(Math.min(w, h) * 0.04)), R = [], G = [], B = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (x < m || x >= w - m || y < m || y >= h - m) { const i = (y * w + x) * 4; R.push(d[i]); G.push(d[i + 1]); B.push(d[i + 2]); }
+  const bg = [med(R), med(G), med(B)];
+  const hist = new Uint32Array(256), dist = new Uint8Array(N);
+  for (let i = 0, p = 0; i < N; i++, p += 4) {
+    const dr = d[p] - bg[0], dg = d[p + 1] - bg[1], db = d[p + 2] - bg[2];
+    const v = Math.min(255, Math.round(Math.sqrt(dr * dr + dg * dg + db * db)));
+    dist[i] = v; hist[v]++;
+  }
+  const thr = Math.max(14, otsu(hist, N) * (1.3 - 0.06 * sens));
+  const fg = new Uint8Array(N);
+  for (let i = 0; i < N; i++) fg[i] = dist[i] > thr ? 1 : 0;
+  const colP = new Float32Array(w), rowP = new Float32Array(h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (fg[y * w + x]) { colP[x] += 1 / h; rowP[y] += 1 / w; }
+
+  // cari deretan kolom/baris yang berisi KTP; celah di antaranya memisahkan sel
+  const runsOf = (P, len) => {
+    const sm = Array.from(P, (v, i) => ((i > 0 ? P[i - 1] : v) + v + (i < len - 1 ? P[i + 1] : v)) / 3);
+    const sorted = sm.slice().sort((a, b) => a - b), peak = sorted[Math.floor(sorted.length * 0.9)];
+    if (peak <= 0.05) return [];
+    const t = 0.3 * peak, minGap = Math.max(2, Math.round(len * 0.008)), minRun = Math.round(len * 0.05);
+    const runs = []; let st = -1;
+    for (let i = 0; i <= len; i++) {
+      const on = i < len && sm[i] > t;
+      if (on && st < 0) st = i;
+      if (!on && st >= 0) { runs.push([st, i - 1]); st = -1; }
+    }
+    const merged = [];
+    runs.forEach(r => {
+      const l = merged[merged.length - 1];
+      if (l && r[0] - l[1] < minGap) l[1] = r[1]; else merged.push(r.slice());
+    });
+    return merged.filter(r => r[1] - r[0] + 1 >= minRun);
+  };
+  const cr = runsOf(colP, w), rr = runsOf(rowP, h);
+  if (!cr.length || !rr.length || cr.length * rr.length < 2 || cr.length * rr.length > 24) return null;
+  const sane = runs => { const ws = runs.map(r => r[1] - r[0] + 1), mx = Math.max(...ws); return ws.every(v => v >= 0.5 * mx); };
+  if (!sane(cr) || !sane(rr)) return null;
+  const bounds = (runs, len) => {
+    const b = [0];
+    for (let i = 1; i < runs.length; i++) b.push(Math.round((runs[i - 1][1] + runs[i][0]) / 2));
+    b.push(len); return b;
+  };
+  const cb = bounds(cr, w), rb = bounds(rr, h), out = [];
+  for (let r = 0; r < rr.length; r++) for (let q = 0; q < cr.length; q++) {
+    // lewati sel yang hampir kosong (mis. baris terakhir tidak penuh)
+    let on = 0, tot = 0;
+    for (let y = rb[r]; y < rb[r + 1]; y++) for (let x = cb[q]; x < cb[q + 1]; x++) { tot++; on += fg[y * w + x]; }
+    if (!tot || on / tot < 0.3) continue;
+    const x0 = cb[q] / sc, y0 = rb[r] / sc, cw = (cb[q + 1] - cb[q]) / sc, ch = (rb[r + 1] - rb[r]) / sc;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(8, Math.round(cw)); cv.height = Math.max(8, Math.round(ch));
+    cv.getContext('2d').drawImage(img, x0, y0, cw, ch, 0, 0, cv.width, cv.height);
+    const dd = detect(cv, sens, ratio, false);
+    out.push({ box: { x: dd.box.x + x0, y: dd.box.y + y0, w: dd.box.w, h: dd.box.h }, ok: dd.ok });
+  }
+  return out.length > 1 ? out : null;
+}
+
+
+/* ---------- Proses satu foto ---------- */
+function loadImg(file) {
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im._u = u;
+    im.onload = () => res(im);
+    im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('File bukan gambar yang bisa dibaca')); };
+    im.src = u;
+  });
+}
+
+async function processItem(it) {
+  const s = cfg(), img = await loadImg(it.file);
+  try {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    let added = false;
+    if (!it.det) {
+      const gridOn = s.gc * s.gr > 1;
+      let d = gridOn
+        ? { all: detectGrid(img, Math.max(1, s.gc), Math.max(1, s.gr), s.sens, s.ratio) }
+        : detect(img, s.sens, s.ratio, s.multi);
+      if (!gridOn && s.multi) {
+        // baca grid otomatis; dipakai bila menemukan lebih banyak KTP daripada deteksi biasa
+        const ag = detectAutoGrid(img, s.sens, s.ratio);
+        if (ag && ag.length > (d.all ? d.all.length : 1)) d = { all: ag };
+      }
+      if (d.all && d.all.length > 1) {
+        // beberapa KTP dalam satu foto: KTP pertama di item ini, sisanya jadi item baru tepat sesudahnya
+        it.det = d.all[0];
+        const extra = d.all.slice(1).map(a => ({ id: nextId++, file: it.file, rot: it.rot, state: 'wait', det: a, child: true }));
+        items.splice(items.indexOf(it) + 1, 0, ...extra);
+        added = true;
+      } else it.det = { box: d.box, ok: d.ok };
+    }
+    let { x, y, w, h } = it.det.box;
+    it.auto = it.det.ok;
+
+    const portrait = h > w, target = portrait ? 1 / s.ratio : s.ratio;
+    if (s.lock && !it.det.manual) {
+      if (w / h < target) { const nw = h * target; x -= (nw - w) / 2; w = nw; }
+      else { const nh = w / target; y -= (nh - h) / 2; h = nh; }
+    }
+    const pp = it.det.manual ? 0 : s.pad, px = w * pp, py = h * pp;
+    x -= px; y -= py; w += 2 * px; h += 2 * py;
+
+    const rot = ((portrait ? 90 : 0) + it.rot) % 360;
+    const k = Math.min(1, MAX_OUT / Math.max(w, h));
+    const cw = Math.round(w * k), ch = Math.round(h * k), swap = rot % 180 !== 0;
+    const c = document.createElement('canvas');
+    c.width = swap ? ch : cw; c.height = swap ? cw : ch;
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.translate(c.width / 2, c.height / 2); g.rotate(rot * Math.PI / 180);
+    // Bagian di luar gambar dibiarkan putih supaya rasio tetap sesuai pilihan
+    const sx = Math.max(0, x), sy = Math.max(0, y), ex = Math.min(W, x + w), ey = Math.min(H, y + h);
+    g.drawImage(img, sx, sy, ex - sx, ey - sy, -cw / 2 + (sx - x) * cw / w, -ch / 2 + (sy - y) * ch / h, (ex - sx) * cw / w, (ey - sy) * ch / h);
+
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', s.q));
+    if (!blob) throw new Error('Gagal membuat JPG');
+    if (it.url) URL.revokeObjectURL(it.url);
+    it.blob = blob; it.url = URL.createObjectURL(blob); it.dim = c.width + '×' + c.height; it.state = 'done';
+    it.wd = null;   // salinan untuk Word/PDF dibuat ulang
+    it.png = null;  // salinan PNG dibuat ulang
+    return added;
+  } finally {
+    URL.revokeObjectURL(img._u); img.src = '';
+  }
+}
+
+async function runQueue() {
+  if (busy) return; busy = true;
+  let it;
+  while ((it = items.find(i => i.state === 'wait'))) {
+    it.state = 'busy'; refresh(it);
+    let added = false;
+    try {
+      added = await processItem(it);
+      if (!it.placed) { it.placed = true; placeSlot(it); }   // masuk otomatis ke susunan Word/PDF
+    } catch (e) { it.state = 'error'; it.msg = e.message || 'Gagal memproses'; }
+    if (added) render(); else refresh(it);
+    await new Promise(r => setTimeout(r, 0));
+  }
+  busy = false; summary();
+}
+
+function addFiles(list) {
+  const files = [...list].filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  files.forEach(f => items.push({ id: nextId++, file: f, rot: 0, state: 'wait' }));
+  render(); runQueue();
+}
+
+/* ---------- Tampilan hasil potong ---------- */
+function assignNames() {
+  const used = new Set(), side = cfg().side;
+  items.forEach(it => {
+    const base = it.file.name.replace(/\.[^.]+$/, '') || 'KTP';
+    let n = base + '_' + side + '.jpg', i = 1;
+    while (used.has(n)) n = base + '_' + side + '_' + (++i) + '.jpg';
+    used.add(n); it.outName = n;
+  });
+}
+
+function mkBtn(label, act, id) {
+  const b = document.createElement('button');
+  b.className = 'btn small alt'; b.textContent = label; b.dataset.act = act; b.dataset.id = id;
+  return b;
+}
+
+function cardEl(it) {
+  const a = document.createElement('article'); a.className = 'card'; a.id = 'c' + it.id;
+  const t = document.createElement('div'); t.className = 'thumb';
+  if (it.state === 'done') { const im = new Image(); im.src = it.url; im.alt = 'Hasil potong ' + it.file.name; t.appendChild(im); }
+  else t.textContent = it.state === 'error' ? 'Gagal' : 'Memproses…';
+  const n = document.createElement('p'); n.className = 'name'; n.textContent = it.outName;
+  const m = document.createElement('p'); m.className = 'meta';
+  const tag = document.createElement('span'); tag.className = 'tag';
+  if (it.state === 'done') {
+    m.textContent = it.dim.replace('×', ' × ') + ' px, ' + Math.round(it.blob.size / 1024) + ' KB';
+    tag.classList.add(it.auto ? 'ok' : 'warn');
+    tag.textContent = (it.det && it.det.manual) ? 'Diatur manual' : it.auto ? 'Terdeteksi otomatis' : 'Posisi perkiraan, cek hasilnya';
+  } else if (it.state === 'error') { tag.classList.add('err'); tag.textContent = it.msg; }
+  else { m.textContent = it.state === 'busy' ? 'Sedang diproses' : 'Menunggu antrean'; }
+  const r = document.createElement('div'); r.className = 'row';
+  if (it.state === 'done') {
+    const dj = mkBtn('Download JPG', 'dl-jpg', it.id); dj.classList.remove('alt');
+    r.append(dj, mkBtn('Atur posisi', 'edit', it.id), mkBtn('Download PNG', 'dl-png', it.id), mkBtn('Putar 90°', 'rot', it.id));
+    if (!slots.includes(it)) r.append(mkBtn('Tambah ke susunan', 'add', it.id));
+  }
+  r.append(mkBtn('Hapus', 'del', it.id));
+  a.append(t, n, m);
+  if (tag.textContent) a.append(tag);
+  a.append(r);
+  return a;
+}
+
+function render() { assignNames(); $('list').replaceChildren(...items.map(cardEl)); summary(); renderLayout(); }
+function refresh(it) {
+  assignNames();
+  const o = $('c' + it.id); if (o) o.replaceWith(cardEl(it));
+  summary();
+  if (it.state === 'done') renderLayout();
+}
+
+function summary() {
+  const done = items.filter(i => i.state === 'done'), warn = done.filter(i => !i.auto).length;
+  $('sum').textContent = items.length
+    ? done.length + ' dari ' + items.length + ' foto selesai' + (warn ? ', ' + warn + ' perlu dicek' : '')
+    : 'Belum ada foto';
+  $('dlJpg').disabled = $('dlPng').disabled = !done.length;
+  $('clear').disabled = !items.length;
+  $('empty').hidden = items.length > 0;
+}
+
+function reprocessAll() {
+  if (items.some(i => i.det && i.det.manual) && !confirm('Mengubah pengaturan akan menghapus semua penyesuaian posisi manual dan memotong ulang. Lanjutkan?')) return;
+  // KTP tambahan dari satu foto dibuang dulu; deteksi diulang dari foto aslinya
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    if (it.child && it.state !== 'busy') {
+      const si = slots.indexOf(it); if (si >= 0) collapseAt(si);
+      if (it.url) URL.revokeObjectURL(it.url);
+      items.splice(i, 1);
+    }
+  }
+  items.forEach(i => { if (i.state !== 'busy') { i.state = 'wait'; i.det = null; } });
+  tapIdx = null; render(); runQueue();
+}
+
+/* ---------- Susunan Word F4 & PDF ---------- */
+const realCount = () => slots.filter(Boolean).length;
+const trimSlots = () => { while (slots.length && slots[slots.length - 1] === null) slots.pop(); };
+
+function timestampName() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear() + '_' + p(d.getHours()) + '-' + p(d.getMinutes()) + '-' + p(d.getSeconds());
+}
+
+function placeSlot(it) {
+  if (realCount() >= MAX_PHOTOS) { $('wstat').textContent = 'Susunan penuh (maksimal ' + MAX_PHOTOS + ' foto). Foto lain tetap bisa diunduh lewat ZIP.'; return false; }
+  const hole = slots.indexOf(null);              // isi slot kosong dulu
+  if (hole >= 0) slots[hole] = it; else slots.push(it);
+  return true;
+}
+
+// Tutup slot i dengan menggeser foto sesudahnya, hanya di dalam halaman yang sama
+function collapseAt(i) {
+  const start = Math.floor(i / perPage) * perPage;
+  const end = Math.min(start + perPage, slots.length);
+  for (let k = i; k < end - 1; k++) slots[k] = slots[k + 1];
+  slots[end - 1] = null;
+}
+
+function movePhoto(from, to) {
+  if (from === null || from === undefined || from === to || !slots[from]) return;
+  if (!slots[to]) {
+    // target slot kosong: pindahkan foto ke sana
+    slots[to] = slots[from];
+    if (Math.floor(from / perPage) !== Math.floor(to / perPage)) collapseAt(from);   // beda halaman: foto di halaman asal naik
+    else slots[from] = null;                                                         // halaman yang sama: posisi asal jadi kosong
+  } else {
+    const tmp = slots[from]; slots[from] = slots[to]; slots[to] = tmp;               // tukar posisi
+  }
+}
+
+function hideResults() { $('dl').replaceChildren(); $('pdfBtn').style.display = 'none'; }
+
+function renderLayout() {
+  trimSlots();
+  const box = $('lay'); box.replaceChildren();
+  if (!slots.length) {
+    const e = document.createElement('div'); e.className = 'empty'; e.style.gridColumn = '1/-1';
+    e.textContent = 'Belum ada foto di susunan. Hasil potong akan masuk otomatis.';
+    box.append(e);
+  }
+  slots.forEach((it, i) => {
+    if (i % perPage === 0) {
+      const lb = document.createElement('div'); lb.className = 'pagelabel'; lb.textContent = 'Halaman ' + (i / perPage + 1);
+      box.append(lb);
+    }
+    const s = document.createElement('div');
+    s.className = 'slot' + (it ? '' : ' empty') + (i === tapIdx ? ' pick' : '');
+    const bd = document.createElement('span'); bd.className = 'badge'; bd.textContent = i + 1; s.append(bd);
+    if (it) {
+      s.draggable = true;
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'rm'; x.title = 'Keluarkan dari susunan'; x.textContent = '×';
+      x.addEventListener('click', ev => { ev.stopPropagation(); const rm = slots[i]; collapseAt(i); if (rm && rm.pre) URL.revokeObjectURL(rm.url); tapIdx = null; renderLayout(); refreshCards(); });
+      const im = new Image(); im.src = it.url; im.alt = 'Foto ' + (i + 1);
+      s.append(x, im);
+      s.addEventListener('dragstart', ev => { dragIdx = i; s.classList.add('dragging'); if (ev.dataTransfer) ev.dataTransfer.setData('text/plain', String(i)); });
+      s.addEventListener('dragend', () => { dragIdx = null; s.classList.remove('dragging'); });
+    } else s.append('Kosong');
+    s.addEventListener('dragover', ev => { ev.preventDefault(); s.classList.add('over'); });
+    s.addEventListener('dragleave', () => s.classList.remove('over'));
+    s.addEventListener('drop', ev => { ev.preventDefault(); s.classList.remove('over'); movePhoto(dragIdx, i); dragIdx = null; renderLayout(); });
+    s.addEventListener('click', () => {
+      if (tapIdx === null) {
+        if (!slots[i]) return;                     // slot kosong tidak bisa jadi asal
+        tapIdx = i; $('wstat').textContent = 'Foto ' + (i + 1) + ' dipilih. Ketuk foto atau slot lain untuk memindahkan atau menukar posisinya.'; renderLayout(); return;
+      }
+      const from = tapIdx; tapIdx = null; movePhoto(from, i); $('wstat').textContent = ''; renderLayout();
+    });
+    box.append(s);
+  });
+  const pages = Math.ceil(slots.length / perPage);
+  $('pageInfo').textContent = slots.length ? '→ ' + realCount() + ' foto, ' + pages + ' halaman F4' : '';
+  $('makeBtn').disabled = $('pdfBtn').disabled = !realCount();
+  hideResults();
+}
+
+function refreshCards() { $('list').replaceChildren(...items.map(cardEl)); }
+
+function setPerPage(n) {
+  perPage = n; tapIdx = null; $('wstat').textContent = '';
+  $('pp8').classList.toggle('on', n === 8); $('pp10').classList.toggle('on', n === 10);
+  renderLayout();
+}
+$('pp8').onclick = () => setPerPage(8);
+$('pp10').onclick = () => setPerPage(10);
+
+// Salinan 1000 px untuk Word/PDF (lebih ringan dikirim ke server)
+async function prepData(it) {
+  if (it.wd) return it.wd;
+  const img = await loadImg(it.blob);
+  try {
+    const k = Math.min(1, WORD_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, 0, 0, c.width, c.height);
+    it.wd = { dataUrl: c.toDataURL('image/jpeg', 0.8), w: c.width, h: c.height };
+  } finally { URL.revokeObjectURL(img._u); }
+  return it.wd;
+}
+
+async function prepAll() {
+  const out = []; let n = 0; const total = realCount();
+  for (const it of slots) {
+    if (it) { $('wstat').textContent = 'Menyiapkan foto ' + (++n) + ' dari ' + total + '...'; out.push(await prepData(it)); }
+    else out.push(null);
+  }
+  return out;
+}
+
+/* ===== WORD (dibuat langsung di browser dengan JSZip) ===== */
+function buildDocx(images, per) {
+  const count = images.length, pages = Math.ceil(count / per);
+  const MARGIN = calcMarginTwips(count, per), COLW = calcColW(MARGIN);
+  const cx = Math.round(9 * 360000), cy = Math.round(6 * 360000);   // foto 9 x 6 cm
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+    'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+    'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+
+  const cellXml = (gi, end, rows, rowIdx, gap) => {
+    const after = (rowIdx < rows - 1) ? gap : 0;
+    let inner;
+    if (gi < end && images[gi]) {
+      const n = gi + 1;
+      inner = '<w:p><w:pPr><w:spacing w:before="0" w:after="' + after + '" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>' +
+        '<w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+        '<wp:extent cx="' + cx + '" cy="' + cy + '"/>' +
+        '<wp:docPr id="' + n + '" name="Foto ' + n + '"/><wp:cNvGraphicFramePr/>' +
+        '<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic>' +
+        '<pic:nvPicPr><pic:cNvPr id="' + n + '" name="foto' + n + '"/><pic:cNvPicPr/></pic:nvPicPr>' +
+        '<pic:blipFill><a:blip r:embed="rId' + n + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm>' +
+        '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>' +
+        '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+    } else {
+      inner = '<w:p><w:pPr><w:spacing w:before="0" w:after="' + after + '" w:line="3402" w:lineRule="exact"/></w:pPr></w:p>';
+    }
+    return '<w:tc><w:tcPr><w:tcW w:w="' + COLW + '" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>' + inner + '</w:tc>';
+  };
+
+  const noBorder = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(b => '<w:' + b + ' w:val="nil"/>').join('');
+
+  const tableXml = pageIdx => {
+    const start = pageIdx * per, end = Math.min(count, start + per);
+    const rows = Math.ceil((end - start) / 2), gap = calcGapTwips(rows, MARGIN);
+    let rowsXml = '';
+    for (let r = 0; r < rows; r++) {
+      const a = start + r * 2;
+      rowsXml += '<w:tr><w:trPr><w:cantSplit/></w:trPr>' + cellXml(a, end, rows, r, gap) + cellXml(a + 1, end, rows, r, gap) + '</w:tr>';
+    }
+    return '<w:tbl><w:tblPr><w:tblW w:w="' + (COLW * 2) + '" w:type="dxa"/><w:jc w:val="center"/>' +
+      '<w:tblBorders>' + noBorder + '</w:tblBorders><w:tblLayout w:type="fixed"/>' +
+      '<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="60" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr>' +
+      '<w:tblGrid><w:gridCol w:w="' + COLW + '"/><w:gridCol w:w="' + COLW + '"/></w:tblGrid>' + rowsXml + '</w:tbl>';
+  };
+
+  let body = '';
+  for (let p = 0; p < pages; p++) {
+    body += tableXml(p);
+    body += '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>' +
+      (p < pages - 1 ? '<w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:br w:type="page"/></w:r>' : '') + '</w:p>';
+  }
+  // Kertas F4/Folio: 22 cm (12472 twips) x 33 cm (18709 twips)
+  const docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + NS + '><w:body>' + body +
+    '<w:sectPr><w:pgSz w:w="12472" w:h="18709"/><w:pgMar w:top="' + MARGIN + '" w:right="' + MARGIN + '" w:bottom="' + MARGIN + '" w:left="' + MARGIN + '" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>' +
+    '</w:body></w:document>';
+
+  let relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  images.forEach((im, k) => { if (im) relsXml += '<Relationship Id="rId' + (k + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image' + (k + 1) + '.jpg"/>'; });
+  relsXml += '</Relationships>';
+
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Default Extension="jpg" ContentType="image/jpeg"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
+  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', contentTypes);
+  zip.file('_rels/.rels', rootRels);
+  zip.file('word/document.xml', docXml);
+  zip.file('word/_rels/document.xml.rels', relsXml);
+  images.forEach((im, i) => { if (im) zip.file('word/media/image' + (i + 1) + '.jpg', im.dataUrl.split(',')[1], { base64: true }); });
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
+}
+
+async function makeWord() {
+  if (!realCount()) { $('wstat').textContent = 'Belum ada foto di susunan.'; return; }
+  if (typeof JSZip === 'undefined') { $('wstat').textContent = 'Pustaka pembuat Word belum termuat. Periksa koneksi internet lalu muat ulang halaman.'; return; }
+  const btn = $('makeBtn'); btn.disabled = true; hideResults();
+  try {
+    const data = await prepAll();
+    const total = realCount(), pages = Math.ceil(slots.length / perPage);
+    $('wstat').textContent = 'Sedang membuat file Word... Mohon tunggu.';
+    const blob = await buildDocx(data, perPage), url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = timestampName() + '.docx'; link.textContent = 'Download Word'; link.className = 'btn green';
+    link.addEventListener('click', () => { link.download = timestampName() + '.docx'; });
+    $('dl').replaceChildren(link);
+    $('pdfBtn').style.display = 'inline-block'; $('pdfBtn').disabled = false;
+    $('wstat').textContent = 'File Word siap diunduh (' + total + ' foto, ' + pages + ' halaman, ' + perPage + ' foto per halaman).';
+  } catch (e) {
+    $('wstat').textContent = 'Terjadi kesalahan: ' + (e && e.message ? e.message : e);
+  }
+  btn.disabled = false;
+}
+$('makeBtn').onclick = makeWord;
+
+/* ===== PDF (dibuat langsung di browser) ===== */
+async function makePdf() {
+  if (!realCount()) { $('wstat').textContent = 'Belum ada foto di susunan.'; return; }
+  $('pdfBtn').disabled = true;
+  try {
+    const data = await prepAll();
+    const blob = buildPdf(data), name = timestampName() + '.pdf';
+    saveBlob(blob, name);
+    $('wstat').textContent = 'PDF berhasil dibuat: ' + name;
+  } catch (err) {
+    $('wstat').textContent = 'Gagal membuat PDF: ' + (err && err.message ? err.message : err);
+  }
+  $('pdfBtn').disabled = !realCount();
+}
+$('pdfBtn').onclick = makePdf;
+
+// HARUS sama dengan fungsi di Code.gs agar Word & PDF identik.
+function calcGapTwips(rows, margin) {
+  if (rows <= 1) return 0;
+  const wanted = 850, usable = 18709 - 2 * margin, rowH = 3402;
+  const maxGap = Math.floor((usable - rows * rowH - 120) / (rows - 1));
+  return Math.max(0, Math.min(wanted, maxGap));
+}
+function calcMarginTwips(count, per) { return (per === 10 && count > 8) ? 360 : 720; }
+function calcColW(margin) { return Math.min(5734, Math.floor((12472 - 2 * margin) / 2)); }
+
+function buildPdf(photos) {
+  // Satuan point (1 cm = 28.3465 pt). Kertas F4 22 x 33 cm, sama dengan file Word.
+  const n = photos.length, PER = perPage, pages = Math.ceil(n / PER);   // n = jumlah slot (termasuk kosong)
+  const MARGIN = calcMarginTwips(n, PER), colTw = calcColW(MARGIN);
+  const W = 623.62, H = 935.43, PW = 255.12, PH = 170.08, ROWH = 170.1;
+  const COLW = colTw / 20, LEFT = (12472 - 2 * colTw) / 40, TOP = MARGIN / 20;
+  const enc = new TextEncoder(), chunks = [], offsets = []; let pos = 0;
+  const push = x => { const b = typeof x === 'string' ? enc.encode(x) : x; chunks.push(b); pos += b.length; };
+  const obj = (id, fn) => { offsets[id] = pos; push(id + ' 0 obj\n'); fn(); push('endobj\n'); };
+
+  // nomor urut gambar hanya untuk slot yang berisi foto
+  const seq = []; let nImg = 0;
+  for (let i = 0; i < n; i++) { seq[i] = photos[i] ? nImg++ : -1; }
+  const imgId = i => 3 + seq[i];
+  const pageId = p => 3 + nImg + 2 * p;
+  const contId = p => 4 + nImg + 2 * p;
+
+  push('%PDF-1.4\n');
+  obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>\n'));
+  let kids = ''; for (let p = 0; p < pages; p++) kids += pageId(p) + ' 0 R ';
+  obj(2, () => push('<< /Type /Pages /Kids [' + kids + '] /Count ' + pages + ' >>\n'));
+
+  for (let i = 0; i < n; i++) {
+    if (!photos[i]) continue;
+    const bin = atob(photos[i].dataUrl.split(',')[1]);
+    const bytes = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+    obj(imgId(i), () => {
+      push('<< /Type /XObject /Subtype /Image /Width ' + photos[i].w + ' /Height ' + photos[i].h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + bytes.length + ' >>\nstream\n');
+      push(bytes);
+      push('\nendstream\n');
+    });
+  }
+
+  for (let p = 0; p < pages; p++) {
+    const start = p * PER, end = Math.min(n, start + PER);
+    const rows = Math.ceil((end - start) / 2);
+    const GAP = calcGapTwips(rows, MARGIN) / 20;
+    let xo = '', content = '';
+    for (let i = start; i < end; i++) {
+      if (!photos[i]) continue;                      // slot kosong dilewati, posisi tetap
+      const li = i - start, row = Math.floor(li / 2), col = li % 2;
+      const x = LEFT + col * COLW + (COLW - PW) / 2;
+      const y = H - (TOP + row * (ROWH + GAP)) - PH;
+      xo += '/Im' + i + ' ' + imgId(i) + ' 0 R ';
+      content += 'q ' + PW.toFixed(2) + ' 0 0 ' + PH.toFixed(2) + ' ' + x.toFixed(2) + ' ' + y.toFixed(2) + ' cm /Im' + i + ' Do Q\n';
+    }
+    obj(pageId(p), () => push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /XObject << ' + xo + '>> >> /Contents ' + contId(p) + ' 0 R >>\n'));
+    obj(contId(p), () => push('<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream\n'));
+  }
+
+  const total = 3 + nImg + 2 * pages, xrefPos = pos;
+  let xref = 'xref\n0 ' + total + '\n0000000000 65535 f \n';
+  for (let id = 1; id < total; id++) xref += String(offsets[id]).padStart(10, '0') + ' 00000 n \n';
+  push(xref + 'trailer\n<< /Size ' + total + ' /Root 1 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF');
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+
+/* ---------- Aksi hasil potong ---------- */
+function saveBlob(blob, name) {
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 10000);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const nameFor = (it, fmt) => it.outName.replace(/\.jpg$/i, '.' + fmt);
+
+// Hasil potong disimpan sebagai JPG; PNG dibuat saat diminta
+async function getBlob(it, fmt) {
+  if (fmt === 'jpg') return it.blob;
+  if (it.png) return it.png;
+  const img = await loadImg(it.blob);
+  try {
+    const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    it.png = await new Promise(r => c.toBlob(r, 'image/png'));
+  } finally { URL.revokeObjectURL(img._u); }
+  if (!it.png) throw new Error('Gagal membuat PNG');
+  return it.png;
+}
+
+async function downloadAll(fmt) {
+  const done = items.filter(i => i.state === 'done'); if (!done.length) return;
+  $('dlJpg').disabled = $('dlPng').disabled = true; let n = 0;
+  try {
+    for (const it of done) {
+      $('sum').textContent = 'Mengunduh ' + (++n) + ' dari ' + done.length + ' (' + fmt.toUpperCase() + ')…';
+      saveBlob(await getBlob(it, fmt), nameFor(it, fmt));
+      await sleep(400);
+    }
+  } catch (e) { alert('Gagal mengunduh: ' + e.message); }
+  summary();
+}
+$('dlJpg').onclick = () => downloadAll('jpg');
+$('dlPng').onclick = () => downloadAll('png');
+
+$('clear').onclick = () => {
+  items.forEach(i => i.url && URL.revokeObjectURL(i.url));
+  slots.forEach(s => s && s.pre && URL.revokeObjectURL(s.url));
+  items.length = 0; slots.length = 0; tapIdx = null;
+  $('wstat').textContent = ''; render();
+};
+
+$('list').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const it = items.find(i => i.id === +b.dataset.id); if (!it) return;
+  if (b.dataset.act === 'del') {
+    const si = slots.indexOf(it); if (si >= 0) collapseAt(si);
+    if (it.url) URL.revokeObjectURL(it.url);
+    items.splice(items.indexOf(it), 1); tapIdx = null; render();
+  } else if (b.dataset.act === 'dl-jpg' || b.dataset.act === 'dl-png') {
+    const fmt = b.dataset.act.slice(3); b.disabled = true;
+    try { saveBlob(await getBlob(it, fmt), nameFor(it, fmt)); } catch (err) { alert('Gagal mengunduh: ' + err.message); }
+    b.disabled = false;
+  } else if (b.dataset.act === 'add') {
+    if (placeSlot(it)) $('wstat').textContent = '';
+    render();
+  } else if (b.dataset.act === 'edit') {
+    openEditor(it);
+  } else { it.rot = (it.rot + 90) % 360; it.state = 'wait'; refresh(it); runQueue(); }
+});
+
+/* ---------- Unggah KTP yang sudah terpotong langsung ke susunan ---------- */
+async function addPreCropped(list) {
+  const files = [...list].filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  let added = 0, n = 0, full = false;
+  for (const f of files) {
+    if (realCount() >= MAX_PHOTOS) { full = true; break; }
+    $('wstat').textContent = 'Memasukkan foto ' + (++n) + ' dari ' + files.length + '...';
+    try {
+      const img = await loadImg(f);
+      let c;
+      try {
+        // Muat utuh ke kotak 9 x 6 tanpa melar; sisa ruang diisi putih. Foto tegak diputar.
+        const portrait = img.naturalHeight > img.naturalWidth;
+        const sw = portrait ? img.naturalHeight : img.naturalWidth, sh = portrait ? img.naturalWidth : img.naturalHeight;
+        const W = WORD_SIDE, H = Math.round(W / 1.5), k = Math.min(W / sw, H / sh);
+        c = document.createElement('canvas'); c.width = W; c.height = H;
+        const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+        g.translate(W / 2, H / 2); if (portrait) g.rotate(Math.PI / 2);
+        g.drawImage(img, -img.naturalWidth * k / 2, -img.naturalHeight * k / 2, img.naturalWidth * k, img.naturalHeight * k);
+      } finally { URL.revokeObjectURL(img._u); }
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+      if (!blob) throw new Error('gagal membuat JPG');
+      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+      const obj = { pre: true, name: f.name, blob, url: URL.createObjectURL(blob), wd: { dataUrl, w: c.width, h: c.height } };
+      if (placeSlot(obj)) added++; else { URL.revokeObjectURL(obj.url); full = true; break; }
+    } catch (err) { alert('Foto "' + f.name + '" tidak bisa dibaca: ' + (err.message || err)); }
+    await sleep(0);
+  }
+  renderLayout();
+  $('wstat').textContent = (added ? added + ' foto ditambahkan ke susunan.' : '') + (full ? ' Susunan penuh (maksimal ' + MAX_PHOTOS + ' foto).' : '');
+}
+$('preFile').onchange = e => { addPreCropped(e.target.files); e.target.value = ''; };
+
+/* ---------- Pengaturan dan unggahan ---------- */
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } };
+$('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+// Kamera HP: tombol berupa <label for="cam">, jadi browser langsung membuka kamera.
+// Foto hasilnya langsung dipotong otomatis.
+$('cam').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+['dragenter', 'dragover'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+$('quality').oninput = () => $('qv').textContent = $('quality').value + '%';
+$('pad').oninput = () => $('pv').textContent = $('pad').value + '%';
+$('sens').oninput = () => $('sv').textContent = $('sens').value;
+['quality', 'pad', 'sens', 'lock', 'ratio', 'multi', 'gridC', 'gridR'].forEach(id => $(id).addEventListener('change', reprocessAll));
+$('side').addEventListener('change', render);
+
+/* ---------- Editor posisi potong ---------- */
+const ed = { on: false };
+function fitBox(b, ratio, pad, lock) {
+  let { x, y, w, h } = b;
+  const portrait = h > w, target = portrait ? 1 / ratio : ratio;
+  if (lock) {
+    if (w / h < target) { const nw = h * target; x -= (nw - w) / 2; w = nw; }
+    else { const nh = w / target; y -= (nh - h) / 2; h = nh; }
+  }
+  const px = w * pad, py = h * pad;
+  return { x: x - px, y: y - py, w: w + 2 * px, h: h + 2 * py };
+}
+const edBox = () => { const f = ed.sc / 100, w = ed.w0 * f, h = ed.h0 * f; return { x: ed.cx - w / 2, y: ed.cy - h / 2, w, h }; };
+
+async function openEditor(it) {
+  if (!it.det) return;
+  const s = cfg();
+  let img;
+  try { img = await loadImg(it.file); } catch (e) { alert(e.message); return; }
+  const base = it.det.manual ? it.det.box : fitBox(it.det.box, s.ratio, s.pad, s.lock);
+  Object.assign(ed, { on: true, it, img, W: img.naturalWidth, H: img.naturalHeight, cx: base.x + base.w / 2, cy: base.y + base.h / 2, w0: base.w, h0: base.h, sc: 100 });
+  $('edSize').value = 100; $('edSv').textContent = '100%';
+  $('ed').hidden = false; drawEd();
+}
+
+function drawEd() {
+  const cv = $('edCv'), k = Math.min(Math.min(window.innerWidth - 60, 800) / ed.W, window.innerHeight * 0.5 / ed.H);
+  ed.k = k; cv.width = Math.round(ed.W * k); cv.height = Math.round(ed.H * k);
+  const g = cv.getContext('2d'); g.drawImage(ed.img, 0, 0, cv.width, cv.height);
+  const b = edBox(), bx = b.x * k, by = b.y * k, bw = b.w * k, bh = b.h * k;
+  g.fillStyle = 'rgba(0,0,0,.5)';
+  g.beginPath(); g.rect(0, 0, cv.width, cv.height); g.rect(bx, by, bw, bh); g.fill('evenodd');
+  g.strokeStyle = '#f9ab00'; g.lineWidth = 2; g.strokeRect(bx, by, bw, bh);
+}
+
+function closeEd() {
+  if (ed.img) URL.revokeObjectURL(ed.img._u);
+  ed.on = false; ed.img = null; $('ed').hidden = true;
+}
+
+const clampEd = () => { ed.cx = Math.max(0, Math.min(ed.W, ed.cx)); ed.cy = Math.max(0, Math.min(ed.H, ed.cy)); };
+let edDrag = null;
+$('edCv').addEventListener('pointerdown', e => { e.target.setPointerCapture(e.pointerId); edDrag = { x: e.clientX, y: e.clientY, cx: ed.cx, cy: ed.cy }; });
+$('edCv').addEventListener('pointermove', e => {
+  if (!edDrag) return;
+  ed.cx = edDrag.cx + (e.clientX - edDrag.x) / ed.k; ed.cy = edDrag.cy + (e.clientY - edDrag.y) / ed.k;
+  clampEd(); drawEd();
+});
+['pointerup', 'pointercancel'].forEach(v => $('edCv').addEventListener(v, () => { edDrag = null; }));
+$('edSize').oninput = () => { ed.sc = +$('edSize').value; $('edSv').textContent = ed.sc + '%'; drawEd(); };
+$('ed').querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => {
+  const [dx, dy] = b.dataset.nudge.split(',').map(Number);
+  ed.cx += dx * ed.W * 0.004; ed.cy += dy * ed.H * 0.004; clampEd(); drawEd();
+});
+$('edSwap').onclick = () => { const t = ed.w0; ed.w0 = ed.h0; ed.h0 = t; drawEd(); };
+$('edCancel').onclick = closeEd;
+$('ed').addEventListener('click', e => { if (e.target === $('ed')) closeEd(); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.on) closeEd(); });
+$('edSave').onclick = () => {
+  const it = ed.it, b = edBox();
+  closeEd();
+  it.det = { box: b, ok: true, manual: true };
+  it.state = 'wait'; refresh(it); runQueue();
+};
+
+summary(); renderLayout();
+</script>
 </body>
 </html>
