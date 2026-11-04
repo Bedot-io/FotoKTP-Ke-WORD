@@ -72,6 +72,8 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .slot.dragging{opacity:.4}.slot.over{outline:3px solid var(--blue)}.slot.pick{outline:3px solid #f9ab00}
 .badge{position:absolute;top:6px;left:6px;background:var(--ink);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}
 .rm{position:absolute;top:5px;right:5px;width:26px;height:26px;border:0;border-radius:50%;background:#d93025;color:#fff;cursor:pointer;font-size:16px;line-height:26px;padding:0}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+#errbar{display:none;position:sticky;top:0;z-index:60;background:#fde7e7;color:#a3262a;padding:10px 14px;font-size:13px;border-bottom:1px solid #a3262a}
 #ed{position:fixed;inset:0;background:rgba(10,20,30,.65);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px;overflow:auto}
 #ed[hidden]{display:none}
 .edbox{background:#fff;border-radius:16px;padding:16px;display:grid;gap:10px;max-width:100%;max-height:100%;overflow:auto;justify-items:center}
@@ -80,6 +82,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 </style>
 </head>
 <body>
+<div id="errbar" role="alert"></div>
 <main class="wrap">
   <h1>Pemotong KTP otomatis</h1>
   <p class="lead">Foto KTP dipotong otomatis langsung di browser Anda, lalu disusun ke Word F4 dan PDF. Semua proses berjalan di browser Anda, gambar tidak dikirim ke server mana pun.</p>
@@ -90,10 +93,10 @@ input[type=range]{width:100%;accent-color:var(--blue)}
         <strong>Tarik foto KTP ke sini</strong>
         <span>atau ketuk untuk memilih dari galeri. Boleh banyak foto sekaligus.</span>
       </div>
-      <label class="btn camlabel" for="cam">📷 Foto dengan kamera</label>
+      <button type="button" class="btn camlabel" id="camBtn">📷 Foto dengan kamera</button>
     </div>
-    <input type="file" id="file" accept="image/*" multiple hidden>
-    <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="file" class="vh" tabindex="-1" accept="image/*" multiple>
+    <input type="file" id="cam" class="vh" tabindex="-1" accept="image/*" capture="environment">
 
     <section class="panel" aria-label="Pengaturan">
       <h2>Pengaturan hasil</h2>
@@ -136,7 +139,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <p class="meta">Setiap foto yang selesai dipotong masuk otomatis ke susunan ini, dan Anda juga bisa mengunggah KTP yang sudah terpotong langsung ke sini (maksimal 50 foto). Geser foto ke foto lain untuk menukar posisi, atau ke slot kosong untuk memindahkannya. Di HP: ketuk satu foto, lalu ketuk foto atau slot tujuan. Tombol × mengeluarkan foto dari susunan dan meninggalkan slot kosong di halaman itu.</p>
     <div class="row">
       <label class="btn alt" for="preFile">Unggah KTP yang sudah terpotong</label>
-      <input type="file" id="preFile" accept="image/*" multiple hidden>
+      <input type="file" id="preFile" class="vh" tabindex="-1" accept="image/*" multiple>
       <span class="meta">Langsung masuk susunan tanpa dipotong lagi.</span>
     </div>
     <div class="row">
@@ -155,6 +158,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
   </section>
 
   <p class="note">Deteksi bekerja paling baik bila KTP difoto di atas permukaan polos yang warnanya berbeda dari kartu, dengan alas polos tersisa sekitar 2-3 cm di sekeliling semua KTP. Foto yang miring dipotong sebagai kotak pembatas, bukan diluruskan. Bila ada beberapa KTP dalam satu foto, letakkan berdampingan dengan jarak sekitar 1 cm dan jangan ditumpuk; tiap KTP dipotong dan dimasukkan sendiri-sendiri. Untuk 8-10 KTP sekaligus, susun rapi dalam grid lalu isi Mode grid (mis. 2 × 5). Hasil bertanda kuning perlu dicek dan, bila perlu, difoto ulang atau diputar.</p>
+  <p class="note">Versi mandiri 4 Nov 2026</p>
 </main>
 
 <div id="ed" hidden role="dialog" aria-modal="true" aria-label="Atur posisi potong">
@@ -175,6 +179,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 </div>
 
 <script>
+window.addEventListener('error', e => { const b = document.getElementById('errbar'); if (b) { b.style.display = 'block'; b.textContent = 'Terjadi kesalahan: ' + e.message + (e.lineno ? ' (baris ' + e.lineno + ')' : ''); } });
 const MAX_OUT = 1600, MAX_PHOTOS = 50, WORD_SIDE = 1000;
 const $ = id => document.getElementById(id);
 const items = [];          // semua foto yang diunggah
@@ -1086,6 +1091,7 @@ drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefau
 $('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 // Kamera HP: tombol berupa <label for="cam">, jadi browser langsung membuka kamera.
 // Foto hasilnya langsung dipotong otomatis.
+$('camBtn').onclick = () => $('cam').click();
 $('cam').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 ['dragenter', 'dragover'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.remove('over'); }));
