@@ -71,8 +71,6 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 .slot.dragging{opacity:.4}.slot.over{outline:3px solid var(--blue)}.slot.pick{outline:3px solid #f9ab00}
 .badge{position:absolute;top:6px;left:6px;background:var(--ink);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}
 .rm{position:absolute;top:5px;right:5px;width:26px;height:26px;border:0;border-radius:50%;background:#d93025;color:#fff;cursor:pointer;font-size:16px;line-height:26px;padding:0}
-.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
-#errbar{display:none;position:sticky;top:0;z-index:60;background:#fde7e7;color:#a3262a;padding:10px 14px;font-size:13px;border-bottom:1px solid #a3262a}
 #ed{position:fixed;inset:0;background:rgba(10,20,30,.65);display:flex;align-items:center;justify-content:center;z-index:50;padding:12px;overflow:auto}
 #ed[hidden]{display:none}
 .edbox{background:#fff;border-radius:16px;padding:16px;display:grid;gap:10px;max-width:100%;max-height:100%;overflow:auto;justify-items:center}
@@ -81,7 +79,6 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 </style>
 </head>
 <body>
-<div id="errbar" role="alert"></div>
 <main class="wrap">
   <h1>Scan KTP Otomatis</h1>
   <p class="lead">Foto KTP dipotong otomatis langsung di browser Anda, lalu disusun ke Word F4 dan PDF. Semua proses berjalan di browser Anda, gambar tidak dikirim ke server mana pun.</p>
@@ -92,10 +89,10 @@ input[type=range]{width:100%;accent-color:var(--blue)}
         <strong>Tarik foto KTP ke sini</strong>
         <span>atau ketuk untuk memilih dari galeri. Boleh banyak foto sekaligus, satu foto berisi satu KTP.</span>
       </div>
-      <button type="button" class="btn camlabel" id="camBtn">📷 Foto dengan kamera</button>
+      <label class="btn camlabel" for="cam"> Foto dengan kamera</label>
     </div>
-    <input type="file" id="file" class="vh" tabindex="-1" accept="image/*" multiple>
-    <input type="file" id="cam" class="vh" tabindex="-1" accept="image/*" capture="environment">
+    <input type="file" id="file" accept="image/*" multiple hidden>
+    <input type="file" id="cam" accept="image/*" capture="environment" hidden>
 
     <section class="panel" aria-label="Pengaturan">
       <h2>Pengaturan hasil</h2>
@@ -131,7 +128,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     <p class="meta">Setiap foto yang selesai dipotong masuk otomatis ke susunan ini, dan Anda juga bisa mengunggah KTP yang sudah terpotong langsung ke sini (maksimal 50 foto). Geser foto ke foto lain untuk menukar posisi, atau ke slot kosong untuk memindahkannya. Di HP: ketuk satu foto, lalu ketuk foto atau slot tujuan. Tombol × mengeluarkan foto dari susunan dan meninggalkan slot kosong di halaman itu.</p>
     <div class="row">
       <label class="btn alt" for="preFile">Unggah KTP yang sudah terpotong</label>
-      <input type="file" id="preFile" class="vh" tabindex="-1" accept="image/*" multiple>
+      <input type="file" id="preFile" accept="image/*" multiple hidden>
       <span class="meta">Langsung masuk susunan tanpa dipotong lagi.</span>
     </div>
     <div class="row">
@@ -142,7 +139,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
     </div>
     <div class="lay" id="lay"></div>
     <div class="row">
-      <button class="btn" id="makeBtn" disabled>Buat file Word</button>
+      <button class="btn" id="makeBtn" disabled>Buat File</button>
       <span id="dl"></span>
       <button class="btn red" id="pdfBtn" style="display:none" disabled>Download PDF</button>
     </div>
@@ -155,7 +152,7 @@ input[type=range]{width:100%;accent-color:var(--blue)}
 <div id="ed" hidden role="dialog" aria-modal="true" aria-label="Atur posisi potong">
   <div class="edbox">
     <b>Atur posisi potong</b>
-    <p class="meta">Geser kotak kuning pada foto asli untuk menyesuaikan hasil potong.</p>
+    <p class="meta">Foto ditampilkan sesuai arah hasil sekarang (termasuk putaran yang sudah Anda lakukan). Geser kotak kuning ke KTP. Garis hijau "ATAS KTP" harus berada di bagian atas KTP; bila belum, putar dengan tombol di bawah.</p>
     <canvas id="edCv"></canvas>
     <label><span class="fl">Ukuran kotak <b id="edSv">100%</b></span><input type="range" id="edSize" min="30" max="200" value="100"></label>
     <label><span class="fl">Sudut miring <b id="edAv">0°</b></span><input type="range" id="edAng" min="-45" max="45" step="0.5" value="0"></label>
@@ -164,14 +161,15 @@ input[type=range]{width:100%;accent-color:var(--blue)}
       <button type="button" class="btn small alt" data-nudge="0,-1" aria-label="Geser atas">↑</button>
       <button type="button" class="btn small alt" data-nudge="0,1" aria-label="Geser bawah">↓</button>
       <button type="button" class="btn small alt" data-nudge="1,0" aria-label="Geser kanan">→</button>
-      <button type="button" class="btn small alt" id="edSwap">Putar kotak 90°</button>
+      <button type="button" class="btn small alt" id="edRotL">⟲ 90°</button>
+      <button type="button" class="btn small alt" id="edSwap">⟳ 90°</button>
+      <button type="button" class="btn small alt" id="edFlip">Balik 180°</button>
     </div>
     <div class="row"><button type="button" class="btn" id="edSave">Simpan</button><button type="button" class="btn alt" id="edCancel">Batal</button></div>
   </div>
 </div>
 
 <script>
-window.addEventListener('error', e => { const b = document.getElementById('errbar'); if (b) { b.style.display = 'block'; b.textContent = 'Terjadi kesalahan: ' + e.message + (e.lineno ? ' (baris ' + e.lineno + ')' : ''); } });
 const MAX_OUT = 1600, MAX_PHOTOS = 50, WORD_SIDE = 1000;
 const $ = id => document.getElementById(id);
 const items = [];          // semua foto yang diunggah (1 foto = 1 KTP)
@@ -456,7 +454,10 @@ async function processItem(it) {
     const pp = (it.det.manual || pass) ? 0 : s.pad, px = w * pp, py = h * pp;   // foto yang sudah terpotong tidak diberi margin
     x -= px; y -= py; w += 2 * px; h += 2 * py;
 
-    const rot = ((portrait ? 90 : 0) + it.rot) % 360;
+    // Arah putar dasar: bila diatur manual di editor, pakai arah yang disimpan pasti (quarter);
+    // bila tidak, tentukan otomatis dari bentuk kotak.
+    const baseRot = (it.det.manual && it.det.quarter != null) ? it.det.quarter : (portrait ? 90 : 0);
+    const rot = (baseRot + it.rot) % 360;
     const k = Math.min(1, MAX_OUT / Math.max(w, h));
     const cw = Math.round(w * k), ch = Math.round(h * k), swap = rot % 180 !== 0;
     const c = document.createElement('canvas');
@@ -666,7 +667,7 @@ function setPerPage(n) {
 $('pp8').onclick = () => setPerPage(8);
 $('pp10').onclick = () => setPerPage(10);
 
-// Salinan 1000 px untuk Word/PDF
+// Salinan 1000 px untuk Word/PDF (lebih ringan dikirim ke server)
 async function prepData(it) {
   if (it.wd) return it.wd;
   const img = await loadImg(it.blob);
@@ -698,11 +699,22 @@ async function prepAll() {
   return out;
 }
 
-/* ===== WORD (dibuat langsung di browser dengan JSZip) ===== */
-function buildDocx(images, per) {
-  const count = images.length, pages = Math.ceil(count / per);
-  const MARGIN = calcMarginTwips(count, per), COLW = calcColW(MARGIN);
-  const cx = Math.round(9 * 360000), cy = Math.round(6 * 360000);   // foto 9 x 6 cm
+/* ===== WORD (dibuat di server) ===== */
+/* Membuat file .docx langsung di browser (port dari generateWord di Code.gs) */
+async function buildDocx(images, perPage) {
+  const count = images.length, pages = Math.ceil(count / perPage);
+  const MARGIN = calcMarginTwips(count, perPage), COLW = calcColW(MARGIN);
+  const cx = Math.round(9 * 360000), cy = Math.round(6 * 360000);   // 9 x 6 cm dalam EMU
+  const zip = new JSZip(), mimes = [];
+  images.forEach((im, i) => {
+    if (!im) { mimes.push(null); return; }
+    const m = String(im.dataUrl || '').match(/^data:(image\/(?:jpeg|jpg|png));base64,([\s\S]+)$/i);
+    if (!m) throw new Error('Foto nomor ' + (i + 1) + ' tidak valid.');
+    const png = m[1].toLowerCase() === 'image/png';
+    mimes.push(png ? 'png' : 'jpg');
+    zip.file('word/media/image' + (i + 1) + '.' + (png ? 'png' : 'jpg'), m[2], { base64: true });
+  });
+
   const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
     'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
     'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
@@ -712,7 +724,7 @@ function buildDocx(images, per) {
   const cellXml = (gi, end, rows, rowIdx, gap) => {
     const after = (rowIdx < rows - 1) ? gap : 0;
     let inner;
-    if (gi < end && images[gi]) {
+    if (gi < end && mimes[gi]) {
       const n = gi + 1;
       inner = '<w:p><w:pPr><w:spacing w:before="0" w:after="' + after + '" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>' +
         '<w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
@@ -731,9 +743,8 @@ function buildDocx(images, per) {
   };
 
   const noBorder = ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map(b => '<w:' + b + ' w:val="nil"/>').join('');
-
   const tableXml = pageIdx => {
-    const start = pageIdx * per, end = Math.min(count, start + per);
+    const start = pageIdx * perPage, end = Math.min(count, start + perPage);
     const rows = Math.ceil((end - start) / 2), gap = calcGapTwips(rows, MARGIN);
     let rowsXml = '';
     for (let r = 0; r < rows; r++) {
@@ -752,40 +763,37 @@ function buildDocx(images, per) {
     body += '<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>' +
       (p < pages - 1 ? '<w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:br w:type="page"/></w:r>' : '') + '</w:p>';
   }
-  // Kertas F4/Folio: 22 cm (12472 twips) x 33 cm (18709 twips)
   const docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + NS + '><w:body>' + body +
     '<w:sectPr><w:pgSz w:w="12472" w:h="18709"/><w:pgMar w:top="' + MARGIN + '" w:right="' + MARGIN + '" w:bottom="' + MARGIN + '" w:left="' + MARGIN + '" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>' +
     '</w:body></w:document>';
 
   let relsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
-  images.forEach((im, k) => { if (im) relsXml += '<Relationship Id="rId' + (k + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image' + (k + 1) + '.jpg"/>'; });
+  mimes.forEach((ext, k) => {
+    if (ext) relsXml += '<Relationship Id="rId' + (k + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image' + (k + 1) + '.' + ext + '"/>';
+  });
   relsXml += '</Relationships>';
 
-  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+  zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
     '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
     '<Default Extension="xml" ContentType="application/xml"/>' +
     '<Default Extension="jpg" ContentType="image/jpeg"/>' +
-    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>';
-  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
-
-  const zip = new JSZip();
-  zip.file('[Content_Types].xml', contentTypes);
-  zip.file('_rels/.rels', rootRels);
+    '<Default Extension="png" ContentType="image/png"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
   zip.file('word/document.xml', docXml);
   zip.file('word/_rels/document.xml.rels', relsXml);
-  images.forEach((im, i) => { if (im) zip.file('word/media/image' + (i + 1) + '.jpg', im.dataUrl.split(',')[1], { base64: true }); });
-  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', compression: 'DEFLATE' });
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 }
 
 async function makeWord() {
   if (!realCount()) { $('wstat').textContent = 'Belum ada foto di susunan.'; return; }
-  if (typeof JSZip === 'undefined') { $('wstat').textContent = 'Pustaka pembuat Word belum termuat. Periksa koneksi internet lalu muat ulang halaman.'; return; }
+  if (typeof JSZip === 'undefined') { $('wstat').textContent = 'Pustaka JSZip gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.'; return; }
   const btn = $('makeBtn'); btn.disabled = true; hideResults();
   try {
     const data = await prepAll();
     const total = realCount(), pages = Math.ceil(slots.length / perPage);
-    $('wstat').textContent = 'Sedang membuat file Word... Mohon tunggu.';
+    $('wstat').textContent = 'Sedang membuat file... Mohon tunggu.';
     const blob = await buildDocx(data, perPage), url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url; link.download = timestampName() + '.docx'; link.textContent = 'Download Word'; link.className = 'btn green';
@@ -793,8 +801,8 @@ async function makeWord() {
     $('dl').replaceChildren(link);
     $('pdfBtn').style.display = 'inline-block'; $('pdfBtn').disabled = false;
     $('wstat').textContent = 'File Word siap diunduh (' + total + ' foto, ' + pages + ' halaman, ' + perPage + ' foto per halaman).';
-  } catch (e) {
-    $('wstat').textContent = 'Terjadi kesalahan: ' + (e && e.message ? e.message : e);
+  } catch (err) {
+    $('wstat').textContent = 'Terjadi kesalahan: ' + (err && err.message ? err.message : err);
   }
   btn.disabled = false;
 }
@@ -816,7 +824,7 @@ async function makePdf() {
 }
 $('pdfBtn').onclick = makePdf;
 
-// Ukuran susunan Word dan PDF (dipakai bersama agar hasilnya identik)
+// HARUS sama dengan fungsi di Code.gs agar Word & PDF identik.
 function calcGapTwips(rows, margin) {
   if (rows <= 1) return 0;
   const wanted = 850, usable = 18709 - 2 * margin, rowH = 3402;
@@ -991,8 +999,8 @@ const drop = $('drop');
 drop.onclick = () => $('file').click();
 drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } };
 $('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
-// Kamera HP: tombol membuka kamera. Foto hasilnya langsung dipotong otomatis (satu foto = satu KTP).
-$('camBtn').onclick = () => $('cam').click();
+// Kamera HP: tombol berupa <label for="cam">, jadi browser langsung membuka kamera.
+// Foto hasilnya langsung dipotong otomatis (satu foto = satu KTP).
 $('cam').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
 ['dragenter', 'dragover'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(v => drop.addEventListener(v, e => { e.preventDefault(); drop.classList.remove('over'); }));
@@ -1026,24 +1034,48 @@ async function openEditor(it) {
   let img;
   try { img = await loadImg(it.file); } catch (e) { alert(e.message); return; }
   const base = (it.det.manual || it.det.pass) ? it.det.box : fitBox(it.det.box, s.ratio, s.pad, s.lock);
+  // Arah putar yang sedang berlaku pada hasil sekarang (sama persis dengan yang dipakai processItem)
+  const baseQ = (it.det.manual && it.det.quarter != null) ? it.det.quarter : (it.det.box.h > it.det.box.w ? 90 : 0);
+  const quarter = (baseQ + it.rot) % 360;
   const deg = Math.round((it.det.ang || 0) * 180 / Math.PI * 2) / 2;
-  Object.assign(ed, { on: true, it, img, W: img.naturalWidth, H: img.naturalHeight, cx: base.x + base.w / 2, cy: base.y + base.h / 2, w0: base.w, h0: base.h, sc: 100, ang: deg });
+  Object.assign(ed, { on: true, it, img, W: img.naturalWidth, H: img.naturalHeight, cx: base.x + base.w / 2, cy: base.y + base.h / 2, w0: base.w, h0: base.h, sc: 100, ang: deg, quarter });
   $('edSize').value = 100; $('edSv').textContent = '100%';
   $('edAng').value = deg; $('edAv').textContent = deg + '°';
   $('ed').hidden = false; drawEd();
 }
 
+const QC = [1, 0, -1, 0], QS = [0, 1, 0, -1];   // cos & sin untuk 0, 90, 180, 270 derajat
+// Ubah pergeseran di layar (arah tampilan) menjadi pergeseran pada foto asli
+const edVis2Img = (dx, dy) => { const q = ed.quarter / 90; return [dx * QC[q] + dy * QS[q], -dx * QS[q] + dy * QC[q]]; };
+
 function drawEd() {
-  const cv = $('edCv'), k = Math.min(Math.min(window.innerWidth - 60, 800) / ed.W, window.innerHeight * 0.5 / ed.H);
-  ed.k = k; cv.width = Math.round(ed.W * k); cv.height = Math.round(ed.H * k);
-  const g = cv.getContext('2d'); g.drawImage(ed.img, 0, 0, cv.width, cv.height);
+  // Foto ditampilkan sudah diputar sesuai arah hasil, jadi sisi ATAS KTP selalu berada di atas layar.
+  const q = ed.quarter / 90, odd = q % 2 === 1;
+  const vw = odd ? ed.H : ed.W, vh = odd ? ed.W : ed.H;
+  const cv = $('edCv'), k = Math.min(Math.min(window.innerWidth - 60, 800) / vw, window.innerHeight * 0.5 / vh);
+  ed.k = k; cv.width = Math.round(vw * k); cv.height = Math.round(vh * k);
+  const g = cv.getContext('2d'), iw = ed.W * k, ih = ed.H * k;
   const b = edBox(), a = ed.ang * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
   const hw = b.w * k / 2, hh = b.h * k / 2, mx = ed.cx * k, my = ed.cy * k;
   const P = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([px, py]) => [mx + px * co - py * si, my + px * si + py * co]);
   const poly = () => { g.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) g.lineTo(P[i][0], P[i][1]); g.closePath(); };
+  g.save();
+  g.translate(cv.width / 2, cv.height / 2); g.rotate(ed.quarter * Math.PI / 180); g.translate(-iw / 2, -ih / 2);
+  g.drawImage(ed.img, 0, 0, iw, ih);
   g.fillStyle = 'rgba(0,0,0,.5)';
-  g.beginPath(); g.rect(0, 0, cv.width, cv.height); poly(); g.fill('evenodd');
+  g.beginPath(); g.rect(0, 0, iw, ih); poly(); g.fill('evenodd');
   g.strokeStyle = '#f9ab00'; g.lineWidth = 2; g.beginPath(); poly(); g.stroke();
+  g.restore();
+
+  // Garis hijau = sisi yang menjadi BAGIAN ATAS KTP pada hasil akhir
+  const tp = ([x, y]) => { const dx = x - iw / 2, dy = y - ih / 2; return [cv.width / 2 + dx * QC[q] - dy * QS[q], cv.height / 2 + dx * QS[q] + dy * QC[q]]; };
+  const edges = { 0: [0, 1], 90: [3, 0], 180: [2, 3], 270: [1, 2] };
+  const [ea, eb] = edges[ed.quarter], A = tp(P[ea]), B = tp(P[eb]), M = tp([mx, my]);
+  g.strokeStyle = '#17a34a'; g.lineWidth = 5; g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke();
+  const tx = (A[0] + B[0]) / 2, ty = (A[1] + B[1]) / 2, vx = M[0] - tx, vy = M[1] - ty, L = Math.hypot(vx, vy) || 1;
+  g.fillStyle = '#17a34a'; g.font = 'bold 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('ATAS KTP', tx + vx / L * 16, ty + vy / L * 16);
+
 }
 
 function closeEd() {
@@ -1056,24 +1088,33 @@ let edDrag = null;
 $('edCv').addEventListener('pointerdown', e => { e.target.setPointerCapture(e.pointerId); edDrag = { x: e.clientX, y: e.clientY, cx: ed.cx, cy: ed.cy }; });
 $('edCv').addEventListener('pointermove', e => {
   if (!edDrag) return;
-  ed.cx = edDrag.cx + (e.clientX - edDrag.x) / ed.k; ed.cy = edDrag.cy + (e.clientY - edDrag.y) / ed.k;
+  const [ix, iy] = edVis2Img(e.clientX - edDrag.x, e.clientY - edDrag.y);
+  ed.cx = edDrag.cx + ix / ed.k; ed.cy = edDrag.cy + iy / ed.k;
   clampEd(); drawEd();
 });
 ['pointerup', 'pointercancel'].forEach(v => $('edCv').addEventListener(v, () => { edDrag = null; }));
 $('edSize').oninput = () => { ed.sc = +$('edSize').value; $('edSv').textContent = ed.sc + '%'; drawEd(); };
 $('ed').querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => {
   const [dx, dy] = b.dataset.nudge.split(',').map(Number);
-  ed.cx += dx * ed.W * 0.004; ed.cy += dy * ed.H * 0.004; clampEd(); drawEd();
+  const st = Math.max(ed.W, ed.H) * 0.004, [ix, iy] = edVis2Img(dx * st, dy * st);
+  ed.cx += ix; ed.cy += iy; clampEd(); drawEd();
 });
 $('edAng').oninput = () => { ed.ang = +$('edAng').value; $('edAv').textContent = ed.ang + '°'; drawEd(); };
-$('edSwap').onclick = () => { const t = ed.w0; ed.w0 = ed.h0; ed.h0 = t; drawEd(); };
+
+// Putar 90°: tukar kotak sekaligus putar arah, sehingga hasil tetap landscape dan tidak melar
+const edTurn = d => { const t = ed.w0; ed.w0 = ed.h0; ed.h0 = t; ed.quarter = (ed.quarter + d) % 360; drawEd(); };
+$('edSwap').onclick = () => edTurn(90);
+$('edRotL').onclick = () => edTurn(270);
+$('edFlip').onclick = () => { ed.quarter = (ed.quarter + 180) % 360; drawEd(); };
+
 $('edCancel').onclick = closeEd;
 $('ed').addEventListener('click', e => { if (e.target === $('ed')) closeEd(); });
 window.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.on) closeEd(); });
 $('edSave').onclick = () => {
-  const it = ed.it, b = edBox(), angDeg = ed.ang;
+  const it = ed.it, b = edBox(), angDeg = ed.ang, q = ed.quarter;
   closeEd();
-  it.det = { box: b, ok: true, manual: true, ang: angDeg * Math.PI / 180 };
+  it.rot = 0;   // arah putar sudah disimpan pasti di det.quarter
+  it.det = { box: b, ok: true, manual: true, ang: angDeg * Math.PI / 180, quarter: q };
   it.state = 'wait'; refresh(it); runQueue();
 };
 
